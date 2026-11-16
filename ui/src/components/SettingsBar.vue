@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Settings } from '../types'
+import type { BackendKind, Settings } from '../types'
+import { BACKEND_DEFAULTS } from '../types'
 
 const props = defineProps<{ settings: Settings; backendOk: boolean | null }>()
 const emit = defineEmits<{
@@ -10,6 +11,12 @@ const emit = defineEmits<{
 function set<K extends keyof Settings>(key: K, value: Settings[K]) {
   emit('update', { ...props.settings, [key]: value })
 }
+
+function setBackend(kind: BackendKind) {
+  // Switching backend also switches the URL to that backend's default,
+  // so the UI never keeps pointing at the old backend's port.
+  emit('update', { ...props.settings, backend: kind, backendBase: BACKEND_DEFAULTS[kind] })
+}
 </script>
 
 <template>
@@ -17,16 +24,27 @@ function set<K extends keyof Settings>(key: K, value: Settings[K]) {
     <summary>⚙️ Settings</summary>
     <div class="settings-grid">
       <label>
+        Backend
+        <select :value="settings.backend" @change="(e) => setBackend((e.target as HTMLSelectElement).value as BackendKind)">
+          <option value="ddgs-rs">ddgs-rs — DuckDuckGo first (:29484)</option>
+          <option value="rustxng">RustXNG (:29483)</option>
+        </select>
+        <small>
+          ddgs-rs is the default: DuckDuckGo first, Bing fallback.
+          RustXNG is still available — pick it and the URL switches to :29483.
+        </small>
+      </label>
+      <label>
         Backend URL
         <input
           type="url"
           :value="settings.backendBase"
-          placeholder="http://127.0.0.1:29483"
+          placeholder="http://127.0.0.1:29484"
           @change="(e) => set('backendBase', (e.target as HTMLInputElement).value.trim())"
         />
         <small>
           In dev/preview the Vite proxy target is fixed at startup from
-          <code>VITE_RUSTXNG_BASE_URL</code> — restart dev after changing it.
+          <code>VITE_BACKEND_BASE_URL</code> — restart dev after changing it.
           <span v-if="backendOk === true"> · ✓ backend reachable</span>
           <span v-else-if="backendOk === false"> · ✕ backend unreachable</span>
         </small>

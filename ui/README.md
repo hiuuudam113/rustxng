@@ -8,18 +8,30 @@ forked RustXNG repo.
 - Text search, image search (masonry grid + lightbox), videos, news
 - Autocomplete, recent searches, suggestions / “Did you mean”, pagination
 - Light/dark mode, mobile-responsive, plain CSS (no UI framework)
-- Settings: backend URL, results per page, SafeSearch, time range, language
+- Settings: backend (ddgs-rs default / RustXNG), backend URL, results per page, SafeSearch, time range, language
+- Results say which backend actually answered ("Answered by 🦆 DuckDuckGo" / "…fell back to Bing", plus the engine on each result)
 - URL-synced state: `?q=`, `category`, `page`
 
-## Prerequisite
+## Prerequisite — backend (default: ddgs-rs)
 
-A running RustXNG server (default `http://127.0.0.1:29483`).
+The UI now uses **ddgs-rs** by default (DuckDuckGo first, Bing fallback),
+not RustXNG. Run it first:
+
+```bash
+cd ../ddgs-rs
+cargo run --release -- serve --bind 127.0.0.1 --port 29484
+# or: ./target/release/ddgs-rs serve
+```
+
+RustXNG (`http://127.0.0.1:29483`) is still supported — pick it in the
+in-app Settings (Backend dropdown), or start Vite with
+`VITE_BACKEND_BASE_URL=http://127.0.0.1:29483`.
 
 ## Run
 
 ```bash
 npm install
-npm run dev      # http://127.0.0.1:5173 — needs RustXNG running on :29483
+npm run dev      # http://127.0.0.1:5173 — needs ddgs-rs running on :29484
 npm run build    # type-check + production build into dist/
 npm run preview  # http://127.0.0.1:4173 — serves dist/ with the same proxy
 ```
@@ -32,9 +44,10 @@ cannot call it directly with `fetch`.
 - **Dev / preview:** the app calls `/api/search`, `/api/autocompleter`,
   `/api/healthz`, … and Vite proxies `/api/*` to the backend
   (`vite.config.ts`, `server.proxy` + `preview.proxy`).
-  Proxy target: `$VITE_RUSTXNG_BASE_URL`, default
-  `http://127.0.0.1:29483` (see `.env.example`). The target is read when
-  Vite starts — restart `npm run dev` after changing it.
+  Proxy target: `$VITE_BACKEND_BASE_URL` (falling back to
+  `$VITE_RUSTXNG_BASE_URL`), default `http://127.0.0.1:29484` (ddgs-rs).
+  The target is read when Vite starts — restart `npm run dev` after
+  changing it.
 - **Served from the same origin** (see “Serving from RustXNG” below):
   the app calls `/search`, … directly (no `/api` prefix, no proxy).
 - **Anywhere else:** the app calls the configured backend URL directly.

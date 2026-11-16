@@ -1,5 +1,5 @@
-import type { SearchParams, SearchResponse, Settings } from '../types'
-import { DEFAULT_SETTINGS } from '../types'
+import type { BackendKind, SearchParams, SearchResponse, Settings } from '../types'
+import { BACKEND_DEFAULTS, DEFAULT_SETTINGS } from '../types'
 
 const SETTINGS_KEY = 'rustxng.settings.v1'
 
@@ -10,11 +10,26 @@ const SETTINGS_KEY = 'rustxng.settings.v1'
 export function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY)
-    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<Settings>
+      // Saved before the backend picker existed: infer the backend from
+      // the saved URL so an old RustXNG setup is not silently switched.
+      if (!parsed.backend) {
+        parsed.backend = (parsed.backendBase || '').includes(':29483')
+          ? 'rustxng'
+          : 'ddgs-rs'
+      }
+      return { ...DEFAULT_SETTINGS, ...parsed }
+    }
   } catch {
     /* fall through to defaults */
   }
   return { ...DEFAULT_SETTINGS }
+}
+
+/** Default backend URL for a backend kind. */
+export function backendDefault(kind: BackendKind): string {
+  return BACKEND_DEFAULTS[kind]
 }
 
 export function saveSettings(s: Settings): void {
@@ -23,9 +38,17 @@ export function saveSettings(s: Settings): void {
 
 /** Backend URL the user configured (or the env default). Shown in the UI. */
 export function getBackendBase(): string {
-  const env = (import.meta.env.VITE_RUSTXNG_BASE_URL as string | undefined) || ''
-  const saved = loadSettings().backendBase
-  return (saved || env || DEFAULT_SETTINGS.backendBase).replace(/\/$/, '')
+  const settings = loadSettings()
+  const env = (import.meta.env.VITE_BACKEND_BASE_URL as string | undefined)
+    || (import.meta.env.VITE_RUSTXNG_BASE_URL as string | undefined)
+    || ''
+  const saved = settings.backendBase
+  return (saved || env || BACKEND_DEFAULTS[settings.backend]).replace(/\/$/, '')
+}
+
+/** Which backend is selected in Settings ('ddgs-rs' by default). */
+export function getBackendKind(): BackendKind {
+  return loadSettings().backend
 }
 
 /**
@@ -43,7 +66,7 @@ export function getBackendBase(): string {
  */
 export function apiPrefix(): string {
   if (typeof window === 'undefined') return '/api'
-  if (window.location.port === '29483') return ''
+  if (window.location.port === '29483' || window.location.port === '29484') return ''
   if (import.meta.env.DEV) return '/api'
   if (window.location.port === '4173') return '/api'
   return getBackendBase()

@@ -27,8 +27,15 @@ export interface SearchResponse {
   suggestions?: string[]
   infoboxes?: Record<string, unknown>[]
   unresponsive_engines?: string[] | string[][]
+  /** ddgs-rs only: the backend that actually answered ("duckduckgo"/"bing") */
+  backend_used?: string
+  /** ddgs-rs only: true when DuckDuckGo was tried first and Bing answered */
+  fallback?: boolean
   [key: string]: unknown
 }
+
+/** Which search backend the UI talks to. ddgs-rs is the default. */
+export type BackendKind = 'ddgs-rs' | 'rustxng'
 
 export type Category = 'general' | 'images' | 'videos' | 'news' | 'map' | 'music' | 'it' | 'science' | 'files' | 'social media'
 
@@ -44,6 +51,8 @@ export interface SearchParams {
 }
 
 export interface Settings {
+  /** 'ddgs-rs' (default, :29484) or 'rustxng' (:29483) */
+  backend: BackendKind
   backendBase: string
   perPage: 10 | 20 | 30
   safesearch: 0 | 1 | 2
@@ -51,9 +60,16 @@ export interface Settings {
   language: string
 }
 
-export const DEFAULT_BACKEND = 'http://127.0.0.1:29483'
+/** Default URL per backend. */
+export const BACKEND_DEFAULTS: Record<BackendKind, string> = {
+  'ddgs-rs': 'http://127.0.0.1:29484',
+  rustxng: 'http://127.0.0.1:29483',
+}
+
+export const DEFAULT_BACKEND = BACKEND_DEFAULTS['ddgs-rs']
 
 export const DEFAULT_SETTINGS: Settings = {
+  backend: 'ddgs-rs',
   backendBase: DEFAULT_BACKEND,
   perPage: 20,
   safesearch: 1,

@@ -206,7 +206,7 @@ onMounted(() => {
 
       <div v-if="error" class="error-banner" role="alert">
         <strong>Couldn't reach the backend ({{ getBackendBase() }}).</strong>
-        <span>{{ error }} — is RustXNG running? Try <code>cargo run</code> or check the URL in Settings.</span>
+        <span>{{ error }} — is the backend running? For ddgs-rs: <code>ddgs-rs serve</code>. For RustXNG: check the URL in Settings.</span>
         <button type="button" @click="doSearch">Retry</button>
       </div>
 
@@ -222,8 +222,20 @@ onMounted(() => {
         <div v-if="results.suggestions?.length" class="suggestions-line">
           Related: {{ results.suggestions.join(' · ') }}
         </div>
+        <div v-if="results.backend_used" class="backend-line">
+          Answered by <strong>{{ results.backend_used === 'duckduckgo' ? '🦆 DuckDuckGo' : results.backend_used }}</strong>
+          <span v-if="results.fallback"> — DuckDuckGo blocked the request, fell back to Bing</span>
+          <span> · via ddgs-rs</span>
+        </div>
         <div v-if="results.answers?.length" class="answers">
-          <div v-for="(a, i) in results.answers" :key="i">{{ typeof a === 'string' ? a : JSON.stringify(a) }}</div>
+          <div v-for="(a, i) in results.answers" :key="i">
+            <template v-if="typeof a === 'string'">{{ a }}</template>
+            <template v-else-if="(a as Record<string, unknown>).answer">
+              <strong v-if="(a as Record<string, unknown>).title">{{ (a as Record<string, unknown>).title }}: </strong>{{ (a as Record<string, unknown>).answer }}
+              <a v-if="(a as Record<string, unknown>).url" :href="(a as Record<string, unknown>).url as string" target="_blank" rel="noopener noreferrer">Source ↗</a>
+            </template>
+            <template v-else>{{ JSON.stringify(a) }}</template>
+          </div>
         </div>
 
         <p v-if="!results.results.length" class="empty">
@@ -268,7 +280,7 @@ onMounted(() => {
     />
 
     <footer class="footer">
-      Powered by <a href="https://github.com/sahenjp/RustXNG" target="_blank" rel="noopener noreferrer">RustXNG</a> (SearXNG-compatible API) · results open in a new tab
+      Powered by <strong>ddgs-rs</strong> (DuckDuckGo first, Bing fallback) · RustXNG still available in Settings · results open in a new tab
     </footer>
   </div>
 </template>

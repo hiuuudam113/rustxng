@@ -95,6 +95,7 @@ input, select { font: inherit; color: var(--text); background: var(--bg); }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
 .did-you-mean, .suggestions-line, .answers, .note, .empty { margin: 12px 0; color: var(--muted); }
+.backend-line { margin: 12px 0 0; color: var(--muted); font-size: 0.9em; }
 .did-you-mean button { background: none; border: none; color: var(--link); text-decoration: underline; }
 .results { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
 .result-title { font-size: 1.15rem; text-decoration: none; }
